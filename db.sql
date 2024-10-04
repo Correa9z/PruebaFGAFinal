@@ -14,10 +14,8 @@ CREATE TABLE departamentos(
 CREATE TABLE departamentos_temp(
     id INT AUTO_INCREMENT,
     nombre VARCHAR(100),
-    caso VARCHAR(400),
     PRIMARY KEY(id)
 );
-
 
 
 -- Creación de la tablas respecto a Empleados ------
@@ -35,9 +33,9 @@ CREATE TABLE empleados_temp(
     nombre VARCHAR(100),
     identificacion VARCHAR(100),
     departamento VARCHAR(100),
-    caso VARCHAR(400),
     PRIMARY KEY(id)
 );
+
 
 
 -- Creación de la tablas respecto a Proyectos ------
@@ -53,7 +51,14 @@ CREATE TABLE proyectos_temp(
     id INT AUTO_INCREMENT,
     nombre VARCHAR(100),
     empleado VARCHAR(100),
-    caso VARCHAR(400),
+    PRIMARY KEY(id)
+);
+
+
+
+CREATE TABLE logs(
+    id INT AUTO_INCREMENT,    
+    mensaje VARCHAR(500),
     PRIMARY KEY(id)
 );
 
@@ -63,7 +68,7 @@ CREATE TABLE proyectos_temp(
 DELIMITER $$
 
 CREATE TRIGGER departamento_insert
-BEFORE INSERT ON departamentos_temp
+AFTER INSERT ON departamentos_temp
 FOR EACH ROW
 BEGIN
     DECLARE departamento_existente INT;
@@ -75,25 +80,26 @@ BEGIN
 
     IF departamento_existente > 0 THEN
         -- Registrar en el log que el departamento ya existe
-        SET NEW.caso = CONCAT("Error, ", NEW.nombre, ' ya existe en la BD.');
+        INSERT INTO logs (mensaje)
+        VALUES (CONCAT("Error,",NEW.id,' ',NEW.nombre, ' ya existe en la BD.'));
     ELSE
         -- Insertar el nuevo departamento
         INSERT INTO departamentos (nombre) VALUES (NEW.nombre);
 
         -- Registrar en el log que se insertó el departamento
-        SET NEW.caso = CONCAT("Info, ", NEW.nombre, ' se registró correctamente.');
+        INSERT INTO logs (mensaje)
+        VALUES (CONCAT("Info,",NEW.id,' ',NEW.nombre, ' se registró correctamente.'));
     END IF;
 END $$
 
 DELIMITER ;
 
 
-
 -- Generación del trigger de Empleados -----------------
 DELIMITER $$
 
 CREATE TRIGGER empleado_insert
-BEFORE INSERT ON empleados_temp
+AFTER INSERT ON empleados_temp
 FOR EACH ROW
 BEGIN
     DECLARE departamento_existente INT;
@@ -111,27 +117,31 @@ BEGIN
     IF departamento_existente IS NOT NULL AND empleado_existente = 0 THEN
         
         INSERT INTO empleados (nombre, identificacion, departamento_id) VALUES (NEW.nombre, NEW.identificacion, departamento_existente);
-        
-        SET NEW.caso = CONCAT("Info,",NEW.nombre,' ',NEW.identificacion,' ',NEW.departamento ,' se inserto corretamente.');
+
+        INSERT INTO logs (mensaje)
+        VALUES (CONCAT("Info,",NEW.id,' ',NEW.nombre,' ',NEW.identificacion,' ',NEW.departamento ,' se inserto corretamente.'));
 
     ELSE
         IF departamento_existente IS NULL AND empleado_existente = 0 THEN
-
-            SET NEW.caso = CONCAT("Error,",NEW.nombre,' ',NEW.identificacion,' ',NEW.departamento ,' No tiene un departamento existente.');
         
+            INSERT INTO logs (mensaje)
+            VALUES (CONCAT("Error,",NEW.id,' ',NEW.nombre,' ',NEW.identificacion,' ',NEW.departamento ,' No tiene un departamento existente.'));
         ELSE
-            SET NEW.caso = CONCAT("Error,",NEW.nombre,' ',NEW.identificacion,' ',NEW.departamento ,' ya se encuentra en la BD.');
+            INSERT INTO logs (mensaje)
+            VALUES (CONCAT("Error,",NEW.id,' ',NEW.nombre,' ',NEW.identificacion,' ',NEW.departamento ,' ya se encuentra en la BD.'));
         END IF;
     END IF;
 END $$
 
 DELIMITER ;
 
+
+
 -- Generación del trigger de Proyectos -----------------
 DELIMITER $$
 
 CREATE TRIGGER proyecto_insert
-BEFORE INSERT ON proyectos_temp
+AFTER INSERT ON proyectos_temp
 FOR EACH ROW
 BEGIN
     DECLARE empleado_existente INT;
@@ -150,15 +160,17 @@ BEGIN
         
         INSERT INTO proyectos (nombre, empleado_id) VALUES (NEW.nombre, empleado_existente);
 
-        SET NEW.caso = CONCAT("Info,",NEW.nombre,' ',NEW.empleado,' se inserto corretamente.');
+        INSERT INTO logs (mensaje)
+        VALUES (CONCAT("Info,",NEW.id,' ',NEW.nombre,' ',NEW.empleado,' se inserto corretamente.'));
 
     ELSE
         IF empleado_existente IS NULL AND proyecto_existente = 0 THEN
-
-            SET NEW.caso = CONCAT("Error,",NEW.nombre,' ',NEW.empleado,' No tiene un empleado existente.');
         
+            INSERT INTO logs (mensaje)
+            VALUES (CONCAT("Error,",NEW.id,' ',NEW.nombre,' ',NEW.empleado,' No tiene un empleado existente.'));
         ELSE
-            SET NEW.caso = CONCAT("Info,",NEW.nombre,' ',NEW.empleado,' Ya se encuentra en la BD.');
+            INSERT INTO logs (mensaje)
+            VALUES (CONCAT("Info,",NEW.id,' ',NEW.nombre,' ',NEW.empleado,' Ya se encuentra en la BD.'));
         END IF;
     END IF;
 END $$

@@ -2,6 +2,8 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from controladores.proyecto_controlador import ProyectoControlador
 from controladores.bd_controlador import BdControlador
+import logging
+import os
 
 class VistaProyecto:
 
@@ -9,6 +11,7 @@ class VistaProyecto:
     ruta_log = ""
     ruta_input_actualizacion = ""
     ruta_totalidad_proyectos = ""
+    logger = ""
 
     def __init__(self,ruta_sistema):
         self.ruta_input = ruta_sistema / '../inputs/Proyectos.txt'
@@ -29,8 +32,12 @@ class VistaProyecto:
 
 
     def guardar_logs(self,data):
-        dataframe = pd.DataFrame(data,columns=["Fecha", "Mensaje"])
-        dataframe.to_csv(self.ruta_log,index=False)
+        for dato in data:
+            partes = dato[0].split(",")
+            if(partes[0] == "Error"):
+                self.logger.error(partes[1])
+            else:
+                self.logger.info(partes[1])
 
 
     def dividir_en_lotes(data, cantidad_lote):
@@ -56,6 +63,7 @@ class VistaProyecto:
             executor.map(lambda lote: self.proyecto_controlador.crear_proyecto(conexion,cursor,lote), lotes)
         
         logs = self.proyecto_controlador.generacion_logs(conexion,cursor)
+        VistaProyecto.iniciar_logs(self)
         VistaProyecto.guardar_logs(self,logs)
         
         self.bd_controlador.cerrar_bd(conexion,cursor)
@@ -70,3 +78,16 @@ class VistaProyecto:
         with ThreadPoolExecutor(max_workers=numero_hilos) as executor:
             executor.map(lambda lote: self.proyecto_controlador.actualizar_proyectos(conexion,cursor,lote), lotes)
         self.bd_controlador.cerrar_bd(conexion,cursor)
+
+
+    def iniciar_logs(self):
+        logger = logging.getLogger('proyecto')
+        logger.setLevel(logging.DEBUG)
+        
+        if not logger.hasHandlers():
+            file_handler = logging.FileHandler(os.path.join("app/logs/", 'proyecto.log'))
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+        
+        self.logger = logger
