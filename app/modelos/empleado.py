@@ -26,7 +26,7 @@ class Empleado:
 
     def genera_logs(self,cursor):
         try:
-            query = "SELECT fecha, mensaje FROM empleados_log"
+            query = "SELECT mensaje FROM logs"
             cursor.execute(query,())
             resultado = cursor.fetchall()
 
@@ -36,11 +36,12 @@ class Empleado:
 
     def eliminar_info(self,conexion,cursor):
         try:
-            query = "DELETE FROM empleados_log"
-            cursor.execute(query,())
-            conexion.commit()
             
             query = "DELETE FROM empleados_temp"
+            cursor.execute(query,())
+            conexion.commit()
+
+            query = "DELETE FROM logs"
             cursor.execute(query,())
             conexion.commit()
     

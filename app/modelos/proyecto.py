@@ -25,7 +25,7 @@ class Proyecto:
     
     def genera_logs(self,cursor):
         try:
-            query = "SELECT fecha, mensaje FROM proyectos_log"
+            query = "SELECT mensaje FROM logs"
             cursor.execute(query,())
             resultado = cursor.fetchall()
 
@@ -35,11 +35,12 @@ class Proyecto:
 
     def eliminar_info(self,conexion,cursor):
         try:
-            query = "DELETE FROM proyectos_log"
-            cursor.execute(query,())
-            conexion.commit()
             
             query = "DELETE FROM proyectos_temp"
+            cursor.execute(query,())
+            conexion.commit()
+
+            query = "DELETE FROM logs"
             cursor.execute(query,())
             conexion.commit()
     
